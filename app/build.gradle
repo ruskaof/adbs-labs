@@ -1,0 +1,42 @@
+plugins {
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    implementation 'com.clickhouse:client-v2:0.9.8'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('bootJar') {
+    archiveFileName = 'energosbyt.jar'
+}
+
+tasks.named('bootRun') {
+    doFirst {
+        environment rootProject.labEnvironment.get()
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Test the repository against the local ClickHouse instance'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    workingDir rootProject.layout.projectDirectory
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    doFirst {
+        environment rootProject.labEnvironment.get()
+    }
+    shouldRunAfter tasks.named('test')
+}

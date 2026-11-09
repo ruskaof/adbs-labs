@@ -1,22 +1,32 @@
-.PHONY: run rund services stop clean
+.PHONY: run rund services stop clean gen load setup teardown
 .DEFAULT_GOAL = run
+COMPOSE := docker compose --env-file .env.local
+PYTHON ?= python3
+DATASET := $(PYTHON) scripts/dataset.py
 
-# Runs all services in detached mode.
 run:
-	docker compose --env-file .env.local up -d --build
+	$(COMPOSE) up -d --build --wait
 
-# Runs all services without detached mode (for debugging).
 rund:
-	docker compose --env-file .env.local up --build
+	$(COMPOSE) up --build
 
-# Shows all service statuses.
 services:
-	docker compose ps
+	$(COMPOSE) ps
 
-# Stops all running services.
 stop:
-	docker compose down
+	$(COMPOSE) down
 
-# Cleans up all resources including volumes.
 clean:
-	docker compose down -v
+	$(COMPOSE) down -v
+
+gen:
+	$(DATASET) gen
+
+load:
+	$(DATASET) load
+
+setup:
+	$(DATASET) setup
+
+teardown:
+	$(DATASET) teardown

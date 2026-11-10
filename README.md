@@ -17,6 +17,7 @@ curl http://localhost:8123/ping
 
 Оба запроса возвращают HTTP 200: приложение — пустой ответ, ClickHouse — `Ok.`.
 Настройки подключения и портов задаются в `.env.local`. Описание API: [api/openapi.yaml](api/openapi.yaml).
+`make run` копирует `.env.local` в игнорируемый `.env`, чтобы команды Docker Compose в CI также получали настройки.
 
 | Команда | Назначение |
 | --- | --- |

@@ -5,6 +5,7 @@ PYTHON ?= python3
 DATASET := $(PYTHON) scripts/dataset.py
 
 run:
+	cp .env.local .env
 	$(COMPOSE) up -d --build --wait
 
 rund:

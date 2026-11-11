@@ -1,0 +1,41 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'base'
+    id 'org.springframework.boot' version '4.0.7' apply false
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation platform('org.springframework.boot:spring-boot-dependencies:4.0.7')
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 17
+        options.encoding = 'UTF-8'
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+}
+
+tasks.named('build') {
+    dependsOn subprojects.collect { "${it.path}:build" }
+}
+
+ext.labEnvironment = providers.exec {
+    workingDir layout.projectDirectory
+    commandLine 'docker', 'compose', '--env-file', '.env.local', 'config', '--format', 'json'
+}.standardOutput.asText.map { output ->
+    // Compose escapes literal dollars so its exported configuration can be read again.
+    new JsonSlurper().parseText(output)['x-lab-environment'].collectEntries { name, value ->
+        [(name): value == null ? '' : value.toString().replace('$$', '$')]
+    }
+}

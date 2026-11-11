@@ -1,0 +1,40 @@
+x-lab-environment: &lab-environment
+  APP_PORT: ${APP_PORT}
+  CLICKHOUSE_HOST: ${CLICKHOUSE_HOST}
+  CLICKHOUSE_HTTP_PORT: ${CLICKHOUSE_HTTP_PORT}
+  CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+  CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+  CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE}
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.7
+    ports:
+      - "127.0.0.1:${CLICKHOUSE_HTTP_PORT}:8123"
+      - "127.0.0.1:${CLICKHOUSE_PORT}:9000"
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DATABASE}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      TZ: UTC
+    volumes:
+      - ./volume:/var/lib/clickhouse
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - clickhouse-client --user "$$CLICKHOUSE_USER" --password "$$CLICKHOUSE_PASSWORD" --database "$$CLICKHOUSE_DB" --query "SELECT 1"
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:${APP_PORT}:${APP_PORT}"
+    environment:
+      <<: *lab-environment
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_HTTP_PORT: 8123
+    depends_on:
+      clickhouse:
+        condition: service_healthy

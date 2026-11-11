@@ -1,0 +1,10 @@
+*
+!build.gradle
+!settings.gradle
+!gradlew
+!gradle/
+!gradle/**
+!app/
+!app/**
+**/build/
+**/src/test/

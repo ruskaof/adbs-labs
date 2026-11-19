@@ -1,0 +1,9 @@
+server:
+  port: ${APP_PORT}
+
+clickhouse:
+  host: ${CLICKHOUSE_HOST:}
+  http-port: ${CLICKHOUSE_HTTP_PORT:}
+  database: ${CLICKHOUSE_DATABASE:}
+  user: ${CLICKHOUSE_USER:}
+  password: ${CLICKHOUSE_PASSWORD:}

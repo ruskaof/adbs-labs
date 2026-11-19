@@ -1,12 +1,10 @@
 package energosbyt.repository;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,13 +40,11 @@ public class EnergosbytRepository {
 
     public void updateOwner(Owner owner) {
         database.execute("""
-                ALTER TABLE dim_users UPDATE
-                    fio = base64Decode({fio:String}),
-                    phone = base64Decode({phone:String}),
-                    phone_prev = base64Decode({phone_prev:String})
-                WHERE id = {id:UInt64} SETTINGS mutations_sync = 1
-                """, Map.of("id", owner.id(), "fio", base64(owner.fio()), "phone", base64(owner.phone()),
-                "phone_prev", base64(owner.phonePrev())));
+                INSERT INTO dim_users (id, fio, phone, phone_prev, created_at, updated_at)
+                SELECT id, {fio:String}, {phone:String}, {phone_prev:String}, created_at,
+                       toDateTime(accurateCast(greatest(toUnixTimestamp(now()), toUnixTimestamp(updated_at) + 1), 'UInt32'))
+                FROM dim_users FINAL WHERE id = {id:UInt64}
+                """, Map.of("id", owner.id(), "fio", owner.fio(), "phone", owner.phone(), "phone_prev", owner.phonePrev()));
     }
 
     public Optional<Realty> realty(BigInteger id) {
@@ -171,10 +167,6 @@ public class EnergosbytRepository {
                     SELECT {gauge:UInt64}, {realty:UInt64}, {installed:DateTime}, 1, 1
                     """, Map.of("gauge", gauge, "realty", realty, "installed", installed));
         }
-    }
-
-    private static String base64(String value) {
-        return Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 
     private record Binding(BigInteger gaugeId, String createdAt, BigInteger version) {}

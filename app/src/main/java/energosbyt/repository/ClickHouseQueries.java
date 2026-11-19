@@ -39,7 +39,9 @@ public class ClickHouseQueries {
 
     private String query(String sql, Map<String, ?> parameters, ClickHouseFormat format) {
         var settings = new QuerySettings().setFormat(format);
-        try (var response = client.query(sql, new HashMap<>(parameters), settings).get()) {
+        var bound = new HashMap<String, Object>();
+        parameters.forEach((key, value) -> bound.put(key, value instanceof String s ? escapeHttpParameter(s) : value));
+        try (var response = client.query(sql, bound, settings).get()) {
             return new String(response.getInputStream().readAllBytes(), StandardCharsets.UTF_8).strip();
         } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
@@ -49,5 +51,10 @@ public class ClickHouseQueries {
         } catch (Exception error) {
             throw new DatabaseException("ClickHouse request failed", error);
         }
+    }
+
+    // ClickHouse reads HTTP query parameters in its Escaped format.
+    private static String escapeHttpParameter(String value) {
+        return value.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r");
     }
 }

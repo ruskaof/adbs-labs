@@ -98,7 +98,7 @@ public class EnergosbytService {
         LocalDate from = dateParameter(dateFrom, "date_from");
         LocalDate to = dateParameter(dateTo, "date_to");
         if (from.isAfter(to)) {
-            throw DomainException.parameter("date_to");
+            throw DomainException.parameter("date_from");
         }
         requireFound(repository.realtyExists(realty));
 

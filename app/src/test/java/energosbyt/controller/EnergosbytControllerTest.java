@@ -115,6 +115,14 @@ class EnergosbytControllerTest {
     }
 
     @Test
+    void reversedReadingPeriodReportsStartDate() throws Exception {
+        http.perform(get("/realty/1/readings").param("date_from", "2026-10-02").param("date_to", "2026-10-01"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("invalid \"date_from\" parameter"));
+        verifyNoInteractions(store);
+    }
+
+    @Test
     void maximumOffsetReturnsEmptyPageWithTotalCount() throws Exception {
         when(store.realtyExists(BigInteger.ONE)).thenReturn(true);
         when(store.invoiceCount(BigInteger.ONE)).thenReturn(36L);

@@ -19,8 +19,10 @@ import energosbyt.config.ClickHouseConfig;
 import energosbyt.config.ClickHouseConfiguration;
 import energosbyt.config.JacksonConfiguration;
 import energosbyt.dto.Owner;
+import energosbyt.dto.OwnerPatch;
 import energosbyt.dto.Reading;
 import energosbyt.exception.DatabaseException;
+import energosbyt.service.EnergosbytService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -112,11 +114,27 @@ class EnergosbytRepositoryIntegrationTest {
     }
 
     @Test
-    void updatesOwnerTextAndHistorySynchronously() {
-        var owner = new Owner(BigInteger.ONE, "Иван O'Neil\\line\nnext\tстрока", "+7'\\123", "old phone");
-        repository.updateOwner(owner);
-        assertThat(repository.owner(BigInteger.ONE)).contains(owner);
-        assertThat(queries.execute("SELECT count() FROM dim_users WHERE id = 1 AND fio = 'Name'")).isEqualTo("0");
+    void consecutiveOwnerPatchesPreserveTextAndAdvanceVersion() {
+        queries.execute("""
+                INSERT INTO dim_users VALUES (2, 'Name', 'old', '', '2023-11-01', now() + INTERVAL 1 HOUR)
+                """);
+        String timestamps = "SELECT toUnixTimestamp(updated_at) FROM dim_users FINAL WHERE id = 2";
+        long originalVersion = Long.parseLong(queries.execute(timestamps));
+        var service = new EnergosbytService(repository);
+        String name = "Иван O'Neil\\line\nnext\tстрока";
+        String phone = "+7'\\123";
+        var first = new OwnerPatch();
+        first.setFio(name);
+        first.setPhone(phone);
+        var second = new OwnerPatch();
+        second.setPhone("second");
+
+        service.patchOwner("2", first);
+        service.patchOwner("2", second);
+
+        assertThat(service.owner("2")).isEqualTo(new Owner(BigInteger.TWO, name, "second", phone));
+        assertThat(Long.parseLong(queries.execute(timestamps))).isEqualTo(originalVersion + 2);
+        assertThat(queries.execute("SELECT toDate(created_at) FROM dim_users FINAL WHERE id = 2")).isEqualTo("2023-11-01");
     }
 
     @Test
